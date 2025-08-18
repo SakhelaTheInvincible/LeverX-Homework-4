@@ -1,0 +1,19 @@
+[project]
+name = "leverx-homework-4-api"
+version = "0.1.0"
+description = "Students/Rooms REST API over JSON storage with Swagger, using Django + DRF"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Django>=5.0,<6.0",
+    "djangorestframework>=3.14,<4.0",
+    "drf-spectacular>=0.27,<0.28",
+]
+
+[tool.uv]
+dev-dependencies = []
+
+[tool.django]
+settings-module = "config.settings"
+
+
