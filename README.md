@@ -25,7 +25,7 @@ Ensure `input/rooms.json` and `input/students.json` exist.
 ### Run
 
 ```bash
-uv run python manage.py runserver 0.0.0.0:8000
+uv run python manage.py runserver
 ```
 
 Open Swagger UI: `http://localhost:8000/api/docs/`
@@ -59,98 +59,31 @@ Open Swagger UI: `http://localhost:8000/api/docs/`
 }
 ```
 
-Possible codes: `validation_error`, `not_found`, `room_not_found`.
+Possible codes: `validation_error`, `not_found`, `room_not_found` and more.
 
-### Design notes (SOLID)
+### Examples (success & errors)
 
-- Single Responsibility: repositories only handle JSON persistence; views orchestrate; serializers validate.
-- Open/Closed: new storage can implement the repository interfaces without touching views.
-- Liskov: JSON repos conform to room/student repository contracts.
-- Interface Segregation: separate `RoomsRepository` and `StudentsRepository`.
-- Dependency Inversion: views depend on abstractions, wired with JSON implementations.
+- Provided example responses for successful requests which are covered across Swagger for each operation.
+- Each of them additionally have defined real-case scenario errors and examples
 
-## Students & Rooms API (FastAPI) — JSON storage
-
-Pragmatic REST API to manage students and rooms stored in JSON files. Implements SOLID via layered design: models, repositories, services, routers.
-
-### UV setup
-
-- Install `uv` per docs (`pipx install uv`).
-- From project root (`LeverX-Homework-4`):
-
-```bash
-uv sync
-uv run serve
-```
-
-Environment vars:
-
-- `DATA_DIR` (optional): directory holding `students.json` and `rooms.json`. Defaults to `./input`.
-- `PORT` (optional): server port. Defaults to 8000.
-
-### Run
-
-```bash
-uv run serve
-```
-
-Open API docs: `http://localhost:8000/docs`
-
-Export OpenAPI spec:
-
-```bash
-uv run export-openapi
-```
-
-### File layout
-
-- `app/models.py` — Pydantic schemas and error model
-- `app/storage.py` — JSON loader, combiner, and JSON repository (low-level IO)
-- `app/repositories.py` — repository interfaces and JSON implementations
-- `app/services.py` — business logic (ID allocation, validations, move operation)
-- `app/routers.py` — FastAPI endpoints
-- `app/main.py` — app factory and server entrypoint
-- `input/rooms.json`, `input/students.json` — data files
-
-### Data format
-
-- Student: `{ "id": int, "name": str, "room": int|null }`
-- Room: `{ "id": int, "name": str }`
-
-### Error format
-
-All errors use:
-
+Success example (GET `/api/students/?room__in=473`):
 ```json
-{ "code": "STRING_CODE", "message": "Human readable", "details": {"optional": "info"} }
+[
+  {
+    "birthday": "2011-08-22T00:00:00.000000",
+    "id": 0,
+    "name": "Peggy Ryan",
+    "room": 473,
+    "sex": "M"
+  }
+]
 ```
 
-Possible codes: `STUDENT_NOT_FOUND`, `ROOM_NOT_FOUND`.
-
-### Endpoints (summary)
-
-- `GET /students?skip&limit` — list students
-- `GET /students/{id}` — get student
-- `POST /students` — create
-- `PATCH /students/{id}` — update
-- `DELETE /students/{id}` — delete
-- `POST /students/{id}/move` — move to another room
-- `GET /rooms?skip&limit` — list rooms
-- `GET /rooms/{id}` — get room
-- `POST /rooms` — create
-- `PATCH /rooms/{id}` — update
-- `DELETE /rooms/{id}` — delete
-- `GET /rooms/{id}/students` — list students for room
-
-OpenAPI includes request/response models and sample schemas; see `/docs` or `openapi.json`.
-
-### SOLID mapping
-
-- Single Responsibility: routers (transport), services (business), repositories (persistence), storage (IO), models (schemas).
-- Open/Closed: easy to introduce a different repository (e.g., DB) via interfaces.
-- Liskov: interfaces ensure substitutability of repositories.
-- Interface Segregation: separate `StudentRepository` and `RoomRepository`.
-- Dependency Inversion: services depend on abstractions; concrete JSON impls wired in `main`.
-
-
-
+Error example (GET `/api/students/?ids__in=1,x,3`):
+```json
+{
+  "code": "validation_error",
+  "message": "Invalid query parameter",
+  "details": {"ids__in": ["Expected comma-separated integers."]}
+}
+```
