@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional
 
 from django.conf import settings
@@ -25,6 +26,8 @@ class Student:
     id: int
     name: str
     room: int
+    sex: str
+    birthday: datetime
 
 
 class RoomsRepository:
@@ -51,10 +54,10 @@ class StudentsRepository:
     def get(self, student_id: int) -> Optional[Student]:
         raise NotImplementedError
 
-    def create(self, name: str, room: int) -> Student:
+    def create(self, name: str, room: int, sex: str, birthday: datetime) -> Student:
         raise NotImplementedError
 
-    def update(self, student_id: int, name: Optional[str] = None, room: Optional[int] = None) -> Optional[Student]:
+    def update(self, student_id: int, name: Optional[str] = None, room: Optional[int] = None, sex: Optional[str] = None, birthday: Optional[datetime] = None) -> Optional[Student]:
         raise NotImplementedError
 
     def delete(self, student_id: int) -> bool:
@@ -145,6 +148,8 @@ class JsonStudentsRepository(JsonFileRepositoryMixin, StudentsRepository):
                     id=int(s.get("id")),
                     name=str(s.get("name")),
                     room=int(s.get("room")),
+                    sex=str(s.get("sex")),
+                    birthday=datetime.strptime(str(s.get("birthday")), "%Y-%m-%dT%H:%M:%S.%f"),
                 )
             )
         return normalized
@@ -152,20 +157,38 @@ class JsonStudentsRepository(JsonFileRepositoryMixin, StudentsRepository):
     def get(self, student_id: int) -> Optional[Student]:
         for s in self._read():
             if int(s.get("id")) == int(student_id):
-                return Student(id=int(s.get("id")), name=str(s.get("name")), room=int(s.get("room")))
+                return Student(
+                    id=int(s.get("id")),
+                    name=str(s.get("name")),
+                    room=int(s.get("room")),
+                    sex=str(s.get("sex")),
+                    birthday=datetime.strptime(str(s.get("birthday")), "%Y-%m-%dT%H:%M:%S.%f"),
+                )
         return None
 
     def _next_id(self, students: List[Dict[str, Any]]) -> int:
         return (max((s["id"] for s in students), default=0) + 1)
 
-    def create(self, name: str, room: int) -> Student:
+    def create(self, name: str, room: int, sex: str, birthday: datetime) -> Student:
         students = self._read()
-        student = {"id": self._next_id(students), "name": name, "room": room}
+        student = {
+            "id": self._next_id(students),
+            "name": name,
+            "room": room,
+            "sex": sex,
+            "birthday": birthday.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+        }
         students.append(student)
         self._write(students)
-        return Student(id=int(student["id"]), name=str(student["name"]), room=int(student["room"]))
+        return Student(
+            id=int(student["id"]),
+            name=str(student["name"]),
+            room=int(student["room"]),
+            sex=str(student["sex"]),
+            birthday=datetime.strptime(str(student["birthday"]), "%Y-%m-%dT%H:%M:%S.%f"),
+        )
 
-    def update(self, student_id: int, name: Optional[str] = None, room: Optional[int] = None) -> Optional[Student]:
+    def update(self, student_id: int, name: Optional[str] = None, room: Optional[int] = None, sex: Optional[str] = None, birthday: Optional[datetime] = None) -> Optional[Student]:
         students = self._read()
         for s in students:
             if s.get("id") == student_id:
@@ -173,8 +196,18 @@ class JsonStudentsRepository(JsonFileRepositoryMixin, StudentsRepository):
                     s["name"] = name
                 if room is not None:
                     s["room"] = room
+                if sex is not None:
+                    s["sex"] = sex
+                if birthday is not None:
+                    s["birthday"] = birthday.strftime("%Y-%m-%dT%H:%M:%S.%f")
                 self._write(students)
-                return Student(id=int(s["id"]), name=str(s["name"]), room=int(s.get("room")))
+                return Student(
+                    id=int(s["id"]),
+                    name=str(s["name"]),
+                    room=int(s.get("room")),
+                    sex=str(s.get("sex")),
+                    birthday=datetime.strptime(str(s.get("birthday")), "%Y-%m-%dT%H:%M:%S.%f"),
+                )
         return None
 
     def delete(self, student_id: int) -> bool:
