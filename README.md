@@ -20,7 +20,6 @@ uv sync
 ```
 
 Ensure `input/rooms.json` and `input/students.json` exist.
-```
 
 ### Run
 
